@@ -15,45 +15,10 @@ const CP_RATE_ENDPOINT = process.env.CP_ENVIRONMENT === 'production'
   ? 'https://soa-gw.canadapost.ca/rs/ship/price'
   : 'https://ct.soa-gw.canadapost.ca/rs/ship/price';
 
-let cachedExchangeRate = null;
-let cacheTimestamp = null;
-const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
-
-async function getCADtoUSDRate() {
-  // Return cached rate if still valid
-  if (cachedExchangeRate && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_DURATION_MS)) {
-    return cachedExchangeRate;
-  }
-
-  try {
-    const today = new Date();
-    const dateStr = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}/${today.getFullYear()}`;
-    
-    const url = `https://www.visa.ca/cmsapi/fx/rates?amount=1&fee=0&utcConvertedDate=${encodeURIComponent(dateStr)}&exchangedate=${encodeURIComponent(dateStr)}&fromCurr=CAD&toCurr=USD`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      console.error('Visa FX API error:', response.status);
-      return cachedExchangeRate || 0.73;
-    }
-
-    const data = await response.json();
-    const rate = parseFloat(data.originalValues?.fxRateVisa || data.fxRateWithAdditionalFee);
-    
-    cachedExchangeRate = rate;
-    cacheTimestamp = Date.now();
-    
-    console.log('Visa FX rate CAD->USD:', rate);
-    return rate;
-  } catch (err) {
-    console.error('Visa FX API call failed:', err.message);
-    return cachedExchangeRate || 0.73;
-  }
+function getCADtoUSDRate() {
+  // Static rate - Visa API blocks server-side requests
+  // Update this periodically or implement client-side fetching
+  return 0.73;
 }
 
 function buildDestinationXML(country, postalCode) {
@@ -79,16 +44,21 @@ function buildDestinationXML(country, postalCode) {
 }
 
 function buildRateRequestXML(originPostal, country, postalCode, weight, length, width, height) {
+  const roundedWeight = Math.round(weight * 100) / 100;
+  const roundedLength = Math.round(length * 10) / 10;
+  const roundedWidth = Math.round(width * 10) / 10;
+  const roundedHeight = Math.round(height * 10) / 10;
+  
   return `<?xml version="1.0" encoding="UTF-8"?>
 <mailing-scenario xmlns="http://www.canadapost.ca/ws/ship/rate-v4">
   <customer-number>${process.env.CP_CUSTOMER_NUMBER}</customer-number>
   ${process.env.CP_CONTRACT_ID ? `<contract-id>${process.env.CP_CONTRACT_ID}</contract-id>` : ''}
   <parcel-characteristics>
-    <weight>${weight}</weight>
+    <weight>${roundedWeight}</weight>
     <dimensions>
-      <length>${length}</length>
-      <width>${width}</width>
-      <height>${height}</height>
+      <length>${roundedLength}</length>
+      <width>${roundedWidth}</width>
+      <height>${roundedHeight}</height>
     </dimensions>
   </parcel-characteristics>
   <origin-postal-code>${originPostal.replace(/\s/g, '').toUpperCase()}</origin-postal-code>
@@ -294,7 +264,7 @@ app.post('/api/rates', async (req, res) => {
 
     let parcelRates = [];
     try {
-      const exchangeRate = await getCADtoUSDRate();
+      const exchangeRate = getCADtoUSDRate();
       const result = await getRates(
         originPostal,
         country,
