@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resolution Warehouse Shipping Estimator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #c41e3a;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #333;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #c41e3a;
+    }
+    .weight-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 12px;
+    }
+    .dimensions-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .dimensions-row.envelope {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .package-type-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .package-type-btn {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      color: #c41e3a;
+    }
+    .package-type-btn:hover {
+      border-color: #c41e3a;
+    }
+    .package-type-btn.active {
+      border-color: #c41e3a;
+      background: #fef0f0;
+      color: #c41e3a;
+    }
+    .dimension-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .dimension-header label {
+      margin-bottom: 0;
+    }
+    .dimension-header select {
+      width: auto;
+      padding: 4px 8px;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #c41e3a;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #a01830;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #results {
+      margin-top: 20px;
+    }
+    .rate-card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 12px;
+      border-left: 4px solid #c41e3a;
+    }
+    .rate-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .service-name {
+      font-weight: 600;
+      font-size: 18px;
+      color: #333;
+    }
+    .total-price {
+      font-size: 24px;
+      font-weight: 700;
+      color: #c41e3a;
+    }
+    .rate-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      font-size: 14px;
+      color: #666;
+    }
+    .detail-item {
+      background: #f9f9f9;
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+    .detail-label {
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+    }
+    .detail-value {
+      font-weight: 500;
+      color: #333;
+    }
+    .error {
+      background: #fee;
+      color: #c00;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    .origin-info {
+      background: #e8f4e8;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Resolution Warehouse Shipping Estimator</h1>
+    
+    <div class="card">
+      <form id="rateForm">
+        <div class="form-group">
+          <label for="destCountry">Destination Country</label>
+          <select id="destCountry">
+            <option value="CA">Canada</option>
+            <option value="US">United States</option>
+            <option value="AF">Afghanistan</option>
+            <option value="AL">Albania</option>
+            <option value="DZ">Algeria</option>
+            <option value="AR">Argentina</option>
+            <option value="AU">Australia</option>
+            <option value="AT">Austria</option>
+            <option value="BE">Belgium</option>
+            <option value="BR">Brazil</option>
+            <option value="BG">Bulgaria</option>
+            <option value="CN">China</option>
+            <option value="CO">Colombia</option>
+            <option value="HR">Croatia</option>
+            <option value="CZ">Czech Republic</option>
+            <option value="DK">Denmark</option>
+            <option value="EG">Egypt</option>
+            <option value="FI">Finland</option>
+            <option value="FR">France</option>
+            <option value="DE">Germany</option>
+            <option value="GR">Greece</option>
+            <option value="HK">Hong Kong</option>
+            <option value="HU">Hungary</option>
+            <option value="IN">India</option>
+            <option value="ID">Indonesia</option>
+            <option value="IE">Ireland</option>
+            <option value="IL">Israel</option>
+            <option value="IT">Italy</option>
+            <option value="JP">Japan</option>
+            <option value="KR">South Korea</option>
+            <option value="MY">Malaysia</option>
+            <option value="MX">Mexico</option>
+            <option value="NL">Netherlands</option>
+            <option value="NZ">New Zealand</option>
+            <option value="NO">Norway</option>
+            <option value="PK">Pakistan</option>
+            <option value="PH">Philippines</option>
+            <option value="PL">Poland</option>
+            <option value="PT">Portugal</option>
+            <option value="RO">Romania</option>
+            <option value="SA">Saudi Arabia</option>
+            <option value="SG">Singapore</option>
+            <option value="ZA">South Africa</option>
+            <option value="ES">Spain</option>
+            <option value="SE">Sweden</option>
+            <option value="CH">Switzerland</option>
+            <option value="TW">Taiwan</option>
+            <option value="TH">Thailand</option>
+            <option value="TR">Turkey</option>
+            <option value="UA">Ukraine</option>
+            <option value="AE">United Arab Emirates</option>
+            <option value="GB">United Kingdom</option>
+            <option value="VN">Vietnam</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="destStreet">Street</label>
+          <input type="text" id="destStreet" placeholder="e.g., 123 Main St" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="destCity">City</label>
+          <input type="text" id="destCity" placeholder="e.g., Toronto" required>
+        </div>
+        
+        <div class="form-group" id="provinceGroup">
+          <label for="destProvince" id="provinceLabel">Province</label>
+          <input type="text" id="destProvince" placeholder="e.g., ON" required>
+        </div>
+        
+        <div class="form-group" id="postalCodeGroup">
+          <label for="destPostalCode" id="postalCodeLabel">Postal Code</label>
+          <input type="text" id="destPostalCode" placeholder="e.g., M5V 3A8" required maxlength="10">
+        </div>
+        
+        <div class="form-group">
+          <label for="weight">Package Weight</label>
+          <div class="weight-row">
+            <input type="number" id="weight" placeholder="e.g., 1.5" step="0.01" min="0.01" required>
+            <select id="weightUnit">
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="lb">lb</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Package Type</label>
+          <div class="package-type-row">
+            <button type="button" class="package-type-btn active" data-type="envelope">📧 Envelope</button>
+            <button type="button" class="package-type-btn" data-type="box">📦 Box / Bubble Mailer</button>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <div class="dimension-header">
+            <label>Package Dimensions</label>
+            <select id="dimensionUnit">
+              <option value="cm">cm</option>
+              <option value="in">inches</option>
+              <option value="mm">mm</option>
+            </select>
+          </div>
+          <div class="dimensions-row envelope" id="dimensionsContainer">
+            <input type="number" id="length" placeholder="Length" step="0.1" min="0.1">
+            <input type="number" id="width" placeholder="Width" step="0.1" min="0.1">
+            <input type="number" id="height" placeholder="Height" step="0.1" min="0.1" style="display: none;">
+          </div>
+          <div id="thicknessNote" style="font-size: 12px; color: #666; margin-top: 6px;">
+            Envelope thickness assumed to be 0.5 cm (5mm)
+          </div>
+        </div>
+        
+        <button type="submit" id="submitBtn">Get Shipping Rates</button>
+      </form>
+    </div>
+    
+    <div id="sortControls" style="display: none;" class="card">
+      <label for="sortBy">Sort by:</label>
+      <select id="sortBy">
+        <option value="price-asc">Price: Low to High</option>
+        <option value="price-desc">Price: High to Low</option>
+        <option value="speed-asc">Speed: Fastest First</option>
+        <option value="speed-desc">Speed: Slowest First</option>
+      </select>
+    </div>
+    
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('rateForm');
+    const results = document.getElementById('results');
+    const submitBtn = document.getElementById('submitBtn');
+    const sortControls = document.getElementById('sortControls');
+    const sortBy = document.getElementById('sortBy');
+    const dimensionsContainer = document.getElementById('dimensionsContainer');
+    const heightInput = document.getElementById('height');
+    const thicknessNote = document.getElementById('thicknessNote');
+    const packageTypeBtns = document.querySelectorAll('.package-type-btn');
+    const destCountry = document.getElementById('destCountry');
+    const destPostalCode = document.getElementById('destPostalCode');
+    const postalCodeLabel = document.getElementById('postalCodeLabel');
+    const postalCodeGroup = document.getElementById('postalCodeGroup');
+    const provinceLabel = document.getElementById('provinceLabel');
+    const destProvince = document.getElementById('destProvince');
+    
+    let currentRates = [];
+    let currentOrigin = '';
+    let packageType = 'envelope';
+
+    destCountry.addEventListener('change', () => {
+      const country = destCountry.value;
+      if (country === 'CA') {
+        postalCodeLabel.textContent = 'Postal Code';
+        destPostalCode.placeholder = 'e.g., M5V 3A8';
+        destPostalCode.maxLength = 7;
+        destPostalCode.required = true;
+        provinceLabel.textContent = 'Province';
+        destProvince.placeholder = 'e.g., ON';
+      } else if (country === 'US') {
+        postalCodeLabel.textContent = 'ZIP Code';
+        destPostalCode.placeholder = 'e.g., 10001';
+        destPostalCode.maxLength = 10;
+        destPostalCode.required = true;
+        provinceLabel.textContent = 'State';
+        destProvince.placeholder = 'e.g., NY';
+      } else {
+        postalCodeLabel.textContent = 'Postal Code';
+        destPostalCode.placeholder = 'If applicable';
+        destPostalCode.maxLength = 15;
+        destPostalCode.required = false;
+        provinceLabel.textContent = 'Province / Region';
+        destProvince.placeholder = 'e.g., England';
+      }
+    });
+
+    packageTypeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        packageTypeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        packageType = btn.dataset.type;
+        
+        if (packageType === 'envelope') {
+          dimensionsContainer.classList.add('envelope');
+          heightInput.style.display = 'none';
+          thicknessNote.style.display = 'block';
+        } else {
+          dimensionsContainer.classList.remove('envelope');
+          heightInput.style.display = 'block';
+          thicknessNote.style.display = 'none';
+        }
+      });
+    });
+
+    function convertToCm(value, unit) {
+      switch (unit) {
+        case 'in': return value * 2.54;
+        case 'mm': return value / 10;
+        case 'cm':
+        default: return value;
+      }
+    }
+
+    function parseTransitDays(transitDays) {
+      if (transitDays === 'N/A') return 999;
+      const str = String(transitDays);
+      const match = str.match(/(\d+)/);
+      return match ? parseInt(match[1]) : 999;
+    }
+
+    function sortRates(rates, sortType) {
+      const sorted = [...rates];
+      switch (sortType) {
+        case 'price-asc':
+          return sorted.sort((a, b) => a.priceDetails.total - b.priceDetails.total);
+        case 'price-desc':
+          return sorted.sort((a, b) => b.priceDetails.total - a.priceDetails.total);
+        case 'speed-asc':
+          return sorted.sort((a, b) => parseTransitDays(a.transitDays) - parseTransitDays(b.transitDays));
+        case 'speed-desc':
+          return sorted.sort((a, b) => parseTransitDays(b.transitDays) - parseTransitDays(a.transitDays));
+        default:
+          return sorted;
+      }
+    }
+
+    function renderRates(rates, origin) {
+      if (rates.length === 0) {
+        results.innerHTML = '<div class="error">No shipping options available for this route.</div>';
+        return;
+      }
+
+      let html = `<div class="origin-info" style="color:#666;font-size:14px;margin-bottom:12px;">💵 All prices shown in USD</div>`;
+      
+      rates.forEach(rate => {
+        const taxes = [];
+        if (rate.priceDetails.gst > 0) taxes.push(`GST: $${rate.priceDetails.gst.toFixed(2)}`);
+        if (rate.priceDetails.pst > 0) taxes.push(`PST: $${rate.priceDetails.pst.toFixed(2)}`);
+        if (rate.priceDetails.hst > 0) taxes.push(`HST: $${rate.priceDetails.hst.toFixed(2)}`);
+        const taxString = taxes.length > 0 ? taxes.join(', ') : 'Included';
+        
+        const lettermailBadge = rate.isLettermail ? '<span style="background:#2e7d32;color:white;padding:2px 8px;border-radius:4px;font-size:12px;margin-left:8px;">Lettermail</span>' : '';
+
+        html += `
+          <div class="rate-card" style="${rate.isLettermail ? 'border-left-color: #2e7d32;' : ''}">
+            <div class="rate-header">
+              <span class="service-name">${rate.serviceName}${lettermailBadge}</span>
+              <span class="total-price">$${rate.priceDetails.total.toFixed(2)} USD</span>
+            </div>
+            <div class="rate-details">
+              <div class="detail-item">
+                <div class="detail-label">Base Price</div>
+                <div class="detail-value">$${rate.priceDetails.base.toFixed(2)}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Taxes</div>
+                <div class="detail-value">${taxString}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Transit Time</div>
+                <div class="detail-value">${rate.transitDays} day(s)</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Expected Delivery</div>
+                <div class="detail-value">${rate.deliveryDate}</div>
+              </div>
+            </div>
+            ${rate.note ? `<div style="font-size:12px;color:#666;margin-top:8px;font-style:italic;">${rate.note}</div>` : ''}
+          </div>
+        `;
+      });
+
+      results.innerHTML = html;
+    }
+
+    sortBy.addEventListener('change', () => {
+      const sortedRates = sortRates(currentRates, sortBy.value);
+      renderRates(sortedRates, currentOrigin);
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const country = document.getElementById('destCountry').value;
+      const street = document.getElementById('destStreet').value.trim();
+      const city = document.getElementById('destCity').value.trim();
+      const province = document.getElementById('destProvince').value.trim();
+      const postalCode = document.getElementById('destPostalCode').value.trim();
+      const weight = parseFloat(document.getElementById('weight').value) || 1;
+      const weightUnit = document.getElementById('weightUnit').value;
+      const dimensionUnit = document.getElementById('dimensionUnit').value;
+      
+      const lengthRaw = parseFloat(document.getElementById('length').value) || 10;
+      const widthRaw = parseFloat(document.getElementById('width').value) || 10;
+      let heightRaw;
+      
+      if (packageType === 'envelope') {
+        heightRaw = dimensionUnit === 'mm' ? 5 : (dimensionUnit === 'in' ? 0.2 : 0.5);
+      } else {
+        heightRaw = parseFloat(document.getElementById('height').value) || 10;
+      }
+      
+      const length = convertToCm(lengthRaw, dimensionUnit);
+      const width = convertToCm(widthRaw, dimensionUnit);
+      const height = convertToCm(heightRaw, dimensionUnit);
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Fetching rates...';
+      results.innerHTML = '<div class="loading">Loading shipping rates...</div>';
+      sortControls.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/rates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ country, street, city, province, postalCode, weight, weightUnit, length, width, height })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch rates');
+        }
+
+        currentRates = data.rates;
+        currentOrigin = data.origin;
+        
+        if (currentRates.length > 0) {
+          sortControls.style.display = 'block';
+        }
+        
+        const sortedRates = sortRates(currentRates, sortBy.value);
+        renderRates(sortedRates, currentOrigin);
+      } catch (error) {
+        results.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Get Shipping Rates';
+      }
+    });
+  </script>
+</body>
+</html>
